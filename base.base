@@ -1,0 +1,9 @@
+views:
+  - type: table
+    name: Table
+  - type: cards
+    name: Cards
+    order:
+      - file.name
+    image: file.file
+    imageFit: ""

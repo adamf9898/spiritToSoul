@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="author" content="MarkdownViewer++" />
+        <title>copilot-instructions.md</title>
+        <style type="text/css">
+            
+/* Avoid page breaks inside the most common attributes, especially for exports (i.e. PDF) */
+td, h1, h2, h3, h4, h5, p, ul, ol, li {
+    page-break-inside: avoid; 
+}
+
+        </style>
+      </head>
+    <body>
+        <h1 id="spirittosoul">spiritToSoul</h1>
+<p>Web game that procedurally derives ALL game assets (modules, entities, quests, mechanics, maps, images, sounds, cards, code snippets) from King James Version (KJV) scripture. Core loop: load scripture + meta JSON -&gt; generate structured content -&gt; update systems each frame -&gt; render via HTML5 Canvas.</p>
+<hr />
+<h2 id="quick-start-agent">Quick Start (Agent)</h2>
+<ol>
+<li>Identify entry: index.html -&gt; boot script (e.g. src/main.js or src/index.js) -&gt; Game.init().</li>
+<li>Init flow: load scripture data (data/ or assets/scripture/), build caches, register systems, start requestAnimationFrame loop.</li>
+<li>Systems pattern: each system exposes init(data), update(dt), render(ctx), dispose(). Keep rendering side‑effects inside render only.</li>
+<li>Content pipeline: scripture verse -&gt; tokenization -&gt; semantic tags -&gt; generators (names, stats, lore, quests) -&gt; cached JSON objects -&gt; referenced by systems.</li>
+<li>Never hardcode scripture text in logic; reference IDs / keys.</li>
+</ol>
+<hr />
+<h2 id="repository-conventions">Repository Conventions</h2>
+<ul>
+<li>Directories (expected):
+<ul>
+<li>src/engine: loop, timing, event bus, utils.</li>
+<li>src/systems: gameplay subsystems (Input, World, Quest, Audio, Combat, UI, Persistence).</li>
+<li>src/render: canvas layers, sprite/text rendering helpers.</li>
+<li>src/data: loaders, parsers, scripture indexing, procedural generators.</li>
+<li>src/scenes: high-level scene/state management (Title, World, Battle, Menu).</li>
+<li>assets/: raw media (images, audio). Keep metadata JSON adjacent where helpful.</li>
+<li>data/: scripture + derived JSON (chapters, verses, index, generated entities).</li>
+<li>docs/: generated docs, diagrams, tutorials; docs/modules, docs/wiki, docs/diagrams.</li>
+<li>tests/: unit/integration (mirror src tree where possible).</li>
+</ul>
+</li>
+<li>All source files begin with the adamf9898 header comment.</li>
+<li>Tabs for indentation; camelCase for functions/properties; PascalCase for classes/enums.</li>
+<li>Use async/await; avoid promise chains.</li>
+<li>Pure functions for data transforms; systems manage state.</li>
+</ul>
+<hr />
+<h2 id="coding-patterns">Coding Patterns</h2>
+<ul>
+<li>Game loop: centralized (GameLoop or Engine). Systems registered in deterministic order; order matters for dependencies (Input -&gt; AI -&gt; Physics -&gt; Quests -&gt; World -&gt; Render UI overlay last).</li>
+<li>Data-first: scripture JSON is immutable input; derived game objects are cached (e.g. verseId -&gt; ItemDefinition).</li>
+<li>Separation: logic (systems) vs presentation (render module) vs data (parsers/generators).</li>
+<li>Avoid globals: export factory or singleton accessor from each system module.</li>
+<li>Use JSDoc for every public function/class; summarize side-effects + data shape.</li>
+<li>Externalization: any user-visible scripture or generated text should originate from data pipeline, not literals sprinkled across code.</li>
+</ul>
+<hr />
+<h2 id="typical-tasks-invoke-only-when-user-requests">Typical Tasks (Invoke Only When User Requests)</h2>
+<p>When user asks:</p>
+<ul>
+<li>&quot;Summarize architecture&quot; -&gt; provide high-level diagram + system list.</li>
+<li>&quot;List entry points&quot; -&gt; index.html, boot script, Game.init, loop file.</li>
+<li>&quot;Generate docstrings&quot; -&gt; add JSDoc to uncovered functions/classes (commit minimal diffs).</li>
+<li>&quot;Create purpose files&quot; -&gt; produce <filename>.purpose.md describing role.</li>
+<li>&quot;Create tutorials&quot; -&gt; produce <filename>.tutorial.md with step-by-step usage.</li>
+<li>&quot;Module docs&quot; -&gt; docs/modules/<module>.md (APIs, data flows, examples).</li>
+<li>&quot;Schema diagrams&quot; -&gt; docs/diagrams/*.md (Mermaid for flows: data ingestion, generation, loop sequencing).</li>
+<li>Requests referencing $: locate occurrences, list modifying functions, suggest extraction into its own system (folder skeleton + registration strategy).</li>
+<li>&quot;Draft wiki&quot; -&gt; docs/wiki structure (Overview, Systems, Data Pipeline, Extending, Glossary, FAQ).</li>
+<li>&quot;Hierarchy&quot; -&gt; tasks → services → processes → commands tree.</li>
+<li>&quot;Glossary&quot; -&gt; stable domain terms (VerseToken, GenerationSeed, QuestArc, EntityArchetype, etc.).</li>
+<li>&quot;Config files&quot; -&gt; enumerate configs (package.json, bundler/ts config, lint, env) with roles.</li>
+<li>&quot;Draft README&quot; -&gt; root README.md with setup, run, build, test, contribute, links to docs.</li>
+</ul>
+<p userInput>Keep placeholders ($) literal unless a concrete value is provided.</p>
+<hr />
+<h2 id="quality-gates">Quality Gates</h2>
+<ul>
+<li>No console errors/warnings during gameplay startup.</li>
+<li>Frame loop stable (&lt; 16ms average on desktop baseline if possible).</li>
+<li>Data loaders fail fast with descriptive errors (include scripture reference ID, not raw text substring).</li>
+<li>Generators deterministic when given same seed.</li>
+<li>Tests (if present) pass; add new tests mirroring existing pattern.</li>
+</ul>
+<hr />
+<h2 id="extension-new-feature-workflow">Extension / New Feature Workflow</h2>
+<ol>
+<li>Define data need (JSON schema) next to generator or in docs/schema.md.</li>
+<li>Add loader/parser (pure) -&gt; create generator (pure where possible) -&gt; integrate via system or scene.</li>
+<li>Register system in engine bootstrap; document order sensitivity.</li>
+<li>Add purpose/tutorial docs; update README or wiki if conceptually new.</li>
+<li>Validate performance (no large synchronous scripture scans every frame; pre-index on init).</li>
+</ol>
+<hr />
+<h2 id="documentation-automation-hints">Documentation Automation Hints</h2>
+<ul>
+<li>Aggregate un-documented symbols via simple grep for <code>function</code> / <code>class</code> lacking preceding /**.</li>
+<li>Purpose docs: single paragraph + bullet of key exports.</li>
+<li>Tutorials: scenario-driven (&quot;How to create a new Quest generator&quot;).</li>
+<li>Diagrams: prefer Mermaid sequence or flowchart: scripture -&gt; tokenizer -&gt; generator -&gt; cache -&gt; system -&gt; render.</li>
+</ul>
+<hr />
+<h2 id="open-questions-maintain-separately-in-todo.md">Open Questions (Maintain Separately in TODO.md)</h2>
+<ul>
+<li>Confirm actual directory names and presence of TypeScript vs plain JS.</li>
+<li>Provide real scripture data schema (fields, indexing strategy, size).</li>
+<li>Specify asset pipeline (pre-processing? atlas packing?).</li>
+<li>Define save format + persistence location.</li>
+</ul>
+<hr />
+<h2 id="usage-safeguards-ai">Usage Safeguards (AI)</h2>
+<ul>
+<li>Do NOT remove adamf9898 headers.</li>
+<li>Do NOT introduce unrelated large frameworks without approval.</li>
+<li>Minimize diff size; prefer surgical edits.</li>
+<li>Ask for clarification before assuming missing architecture.</li>
+</ul>
+<hr />
+<h2 id="trigger-todo-generation">Trigger: TODO Generation</h2>
+<p>On request: scan for TODO/FIXME, compile root TODO.md with file:line and concise action item.</p>
+<hr />
+<h2 id="learnings">Learnings</h2>
+<ul>
+<li>Added explicit Learnings section placeholder for future adaptive guidance (1)</li>
+</ul>
+<!-- adamf9898 -->
+
+    </body>
+</html>
+            
