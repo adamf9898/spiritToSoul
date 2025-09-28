@@ -152,7 +152,7 @@
     { "term": "strife", "description": "requesting divine aid to cause injury or destruction." }
   ],
   "building": [
-    "blackmarket",
+    "blackMarket",
     "shop",
     "village",
     "town",

@@ -1,0 +1,9 @@
+type: marketplace
+title: spiritToSoul
+language: English
+programming_language: JavaScript
+content:
+  - lesson1
+additional_files:
+  - name: package.json
+yaml_version: 4

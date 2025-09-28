@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Interactive Sections with Achievements & Bonuses</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f1226;
+      --panel: #1a1f3b;
+      --accent: #6c8cff;
+      --accent-2: #ffad5c;
+      --text: #eaf0ff;
+      --muted: #a9b3d1;
+      --success: #56d364;
+      --warn: #ffd35c;
+      --danger: #ff6c6c;
+      --shadow: rgba(0,0,0,0.35);
+    }
+    * { box-sizing: border-box }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #0b0e1f 0%, #0f1226 100%);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    header {
+      padding: 24px;
+      border-bottom: 1px solid #252a4a;
+      background: rgba(26,31,59,0.6);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      position: sticky; top: 0; z-index: 10;
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    .sub { color: var(--muted); font-size: 14px }
+    main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+    .toolbar {
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px;
+    }
+    input[type="text"] {
+      background: var(--panel);
+      border: 1px solid #2a315c;
+      color: var(--text);
+      padding: 10px 12px; border-radius: 8px; min-width: 280px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    button {
+      background: var(--accent);
+      color: #0e1224;
+      border: none; padding: 10px 14px; border-radius: 8px; font-weight: 600;
+      box-shadow: 0 8px 18px rgba(108,140,255,0.25);
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #2a315c; color: var(--text);
+      box-shadow: none; border: 1px solid #3a4378;
+    }
+    button.ghost {
+      background: transparent; color: var(--text);
+      border: 1px solid #3a4378;
+    }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid #2a315c;
+      border-radius: 14px; padding: 14px;
+      box-shadow: 0 10px 20px var(--shadow);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .card h3 { margin: 0; font-size: 18px; }
+    .kv {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      font-size: 13px; color: var(--muted);
+    }
+    .kv div { background: #101430; border: 1px solid #232a52; border-radius: 8px; padding: 8px; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge {
+      background: #101430; border: 1px solid #232a52; color: var(--muted);
+      padding: 6px 8px; border-radius: 999px; font-size: 12px;
+    }
+    .badge.success { border-color: #2c7343; color: #baf7c6; }
+    .badge.warn { border-color: #7a642a; color: #ffe3a2; }
+    .badge.accent { border-color: #3a54d9; color: #c7d3ff; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .divider { height: 1px; background: #232a52; margin: 6px 0; }
+    .list {
+      display: flex; flex-direction: column; gap: 8px; font-size: 13px;
+    }
+    .pill {
+      background: #101430; border: 1px solid #232a52; border-radius: 8px;
+      padding: 8px; color: var(--muted);
+    }
+    .muted { color: var(--muted) }
+    .panel {
+      background: var(--panel); border: 1px solid #2a315c; border-radius: 12px;
+      padding: 12px; box-shadow: 0 6px 16px var(--shadow);
+    }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .grow { flex: 1 }
+    textarea, pre {
+      width: 100%; background: #0b0e1f; color: #cbd5ff; border: 1px solid #232a52; border-radius: 10px;
+      padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px; line-height: 1.4;
+    }
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: none; align-items: center; justify-content: center; z-index: 100;
+    }
+    .modal {
+      width: 92%; max-width: 700px;
+      background: var(--panel); border: 1px solid #2a315c; border-radius: 12px; padding: 16px;
+      box-shadow: 0 20px 50px var(--shadow);
+    }
+    .modal h4 { margin: 0 0 8px }
+    .chat {
+      display: grid; grid-template-columns: 1fr; gap: 8px;
+      max-height: 300px; overflow: auto; border: 1px solid #232a52; border-radius: 10px; padding: 10px; background: #0b0e1f;
+    }
+    .msg { padding: 8px 10px; border-radius: 8px; font-size: 13px }
+    .user { background: #13335b; border: 1px solid #1c4a83; color: #cfe4ff; }
+    .system { background: #2a315c; border: 1px solid #3a4378; color: #eaf0ff; }
+    .footer { margin-top: 24px; color: var(--muted); font-size: 12px; text-align: center; }
+
+    /* Utility classes to replace inline styles */
+    .mt16 { margin-top: 16px }
+    .mt8 { margin-top: 8px }
+    .my8 { margin: 8px 0 }
+    .h3-8 { margin: 0 0 8px }
+    .codebox { margin-top: 8px; min-height: 120px }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Interactive Sections</h1>
+    <div class="sub">Generate sections with interaction, improvements, rewards, achievements, and consecutive bonuses.</div>
+  </header>
+
+  <main>
+    <div class="toolbar panel">
+      <input id="titleInput" type="text" placeholder="Section title (e.g., Faithful Beginnings)" />
+      <button id="addBtn">Add section</button>
+      <button id="openGameBtn" class="secondary">Open spiritToSoul</button>
+      <button id="completeAllBtn" class="secondary">Complete all visible</button>
+      <button id="resetBtn" class="ghost">Reset</button>
+    </div>
+
+    <section class="grid" id="grid"></section>
+
+    <section class="panel mt16">
+      <div class="row">
+        <div class="grow">
+          <h3 class="h3-8">Achievements</h3>
+          <div id="achievements" class="badge-row"></div>
+        </div>
+        <div>
+          <div class="pill">Global streak: <span id="streak">0</span></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <h4 class="my8">Export</h4>
+      <div class="row">
+        <button id="exportBtn" class="secondary">Export JSON</button>
+        <button id="copyBtn" class="ghost">Copy</button>
+      </div>
+      <pre id="exportArea" class="codebox"></pre>
+    </section>
+
+    <div class="footer">Template ready for UI rendering, arrays of output, and extensible systems.</div>
+  </main>
+
+  <!-- Interaction Modal -->
+  <div class="modal-backdrop" id="backdrop">
+    <div class="modal">
+      <h4 id="modalTitle">Interaction</h4>
+      <div class="muted" id="modalMeta"></div>
+      <div class="chat" id="chat"></div>
+      <div class="row mt8">
+        <input id="chatInput" type="text" class="grow" placeholder="Type your message..." />
+        <button id="sendBtn">Send</button>
+        <button id="closeBtn" class="ghost">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===========================
+    // Core Types & State
+    // ===========================
+    const InteractionTypes = ["conversation", "dialogue", "chat", "discussion"];
+    const ImprovementTypes = ["goal", "task", "objective", "mission", "quest", "challenge"];
+    const RewardTypes = ["reward", "prize", "benefit", "win", "profit", "advantage"];
+
+    // Global state
+    const state = {
+      sections: [],
+      achievements: [],
+      objectPool: ["Artifact", "Tool", "Card", "Token", "Blessing", "Key", "Scroll"],
+      globalStreak: 0,
+      lastCompletedAt: null,
+      activeSectionId: null
+    };
+
+    // ===========================
+    // Utility: IDs & Random
+    // ===========================
+    const uid = () => Math.random().toString(36).slice(2, 8);
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const now = () => new Date().toISOString();
+
+    // ===========================
+    // Method Generators
+    // ===========================
+    function generateInteraction() {
+      const type = pick(InteractionTypes);
+      const prompt = generateInteractionPrompt(type);
+      return { type, prompt };
+    }
+    function generateInteractionPrompt(type) {
+      const starters = {
+        conversation: "Share your perspective and a personal story.",
+        dialogue: "Ask a clarifying question and propose a response.",
+        chat: "State your goal in one sentence, then a quick next step.",
+        discussion: "List two pros and one concern, then suggest a path."
+      };
+      return starters[type] || "Begin the exchange.";
+    }
+
+    function generateImprovement() {
+      const type = pick(ImprovementTypes);
+      const plan = generateImprovementPlan(type);
+      return { type, plan };
+    }
+    function generateImprovementPlan(type) {
+      const plans = {
+        goal: "Define success criteria and timebox to 24 hours.",
+        task: "Break into 3 checks: prepare, act, verify.",
+        objective: "Set measurable targets with one risk and mitigation.",
+        mission: "Describe purpose, allies, and constraints.",
+        quest: "Identify a relic, a route, and a reveal.",
+        challenge: "Specify rules, score system, and win condition."
+      };
+      return plans[type] || "Outline steps and expected outcomes.";
+    }
+
+    function generateReward() {
+      const type = pick(RewardTypes);
+      const value = generateRewardValue(type);
+      return { type, value };
+    }
+    function generateRewardValue(type) {
+      const values = {
+        reward: "+1 Insight Card",
+        prize: "Unlock cosmetic banner",
+        benefit: "Gain helper hint",
+        win: "Advance track +1",
+        profit: "+50 XP",
+        advantage: "Reroll once"
+      };
+      return values[type] || "Receive a small boon.";
+    }
+
+    function generateAchievement(section) {
+      const id = `achv-${section.id}`;
+      const title = `Achievement: ${section.improvement.type.toUpperCase()} Complete`;
+      const description = `Completed the ${section.improvement.type} via ${section.interaction.type}.`;
+      return { id, title, description, unlocked: true, unlockedAt: now(), purpose: section.improvement.plan };
+    }
+
+    function generateBonusObjects(streak = 1) {
+      const basePool = state.objectPool;
+      const count = Math.min(1 + Math.floor(Math.random() * (1 + streak)), 5);
+      const newObjects = Array.from({ length: count }, () => pick(basePool));
+
+      // Streak-based expansion: add new types to the pool
+      if (streak % 3 === 0) {
+        const expansions = ["Map", "Compass", "Seal", "Crown", "Lantern", "Banner", "Harbor"];
+        const add = pick(expansions);
+        if (!state.objectPool.includes(add)) state.objectPool.push(add);
+        newObjects.push(add);
+      }
+      return newObjects;
+    }
+
+    // ===========================
+    // Section Lifecycle
+    // ===========================
+    function generateSection(title) {
+      const section = {
+        id: uid(),
+        title: title || "Untitled Section",
+        interaction: generateInteraction(),
+        improvement: generateImprovement(),
+        reward: generateReward(),
+        completed: false,
+        achievement: null,
+        bonusUnlocked: false,
+        generatedObjects: [],
+        createdAt: now(),
+        completedAt: null,
+        streakContribution: 0,
+        log: []
+      };
+      section.log.push({ at: now(), event: "generated", data: { interaction: section.interaction, improvement: section.improvement, reward: section.reward } });
+      state.sections.unshift(section);
+      render();
+      return section;
+    }
+
+    function completeSection(id) {
+      const section = state.sections.find(s => s.id === id);
+      if (!section || section.completed) return;
+
+      section.completed = true;
+      section.completedAt = now();
+
+      // Achievement
+      section.achievement = generateAchievement(section);
+      state.achievements.unshift(section.achievement);
+
+      // Global streak logic: consecutive completions
+      state.globalStreak += 1;
+      section.streakContribution = state.globalStreak;
+
+      // Bonus objects
+      section.bonusUnlocked = true;
+      section.generatedObjects = generateBonusObjects(state.globalStreak);
+
+      // Reward application (demo log)
+      section.log.push({ at: now(), event: "completed", data: { achievement: section.achievement, bonus: section.generatedObjects, reward: section.reward } });
+      render();
+    }
+
+    function startInteraction(id) {
+      state.activeSectionId = id;
+      const section = state.sections.find(s => s.id === id);
+      if (!section) return;
+      openModal(section);
+    }
+
+    function resetAll() {
+      state.sections = [];
+      state.achievements = [];
+      state.objectPool = ["Artifact", "Tool", "Card", "Token", "Blessing", "Key", "Scroll"];
+      state.globalStreak = 0;
+      state.lastCompletedAt = null;
+      state.activeSectionId = null;
+      render();
+    }
+
+    // ===========================
+    // UI Rendering
+    // ===========================
+    function render() {
+      const grid = document.getElementById("grid");
+      grid.innerHTML = state.sections.map(sectionToHTML).join("");
+      document.getElementById("streak").textContent = String(state.globalStreak);
+      renderAchievements();
+      renderExport();
+      bindCardEvents();
+    }
+
+    function sectionToHTML(s) {
+      return `
+        <article class="card" data-id="${s.id}">
+          <h3>${s.title}</h3>
+          <div class="kv">
+            <div><strong>Interaction:</strong><br>${s.interaction.type}</div>
+            <div><strong>Improvement:</strong><br>${s.improvement.type}</div>
+            <div><strong>Reward:</strong><br>${s.reward.type} — ${s.reward.value}</div>
+            <div><strong>Status:</strong><br>${s.completed ? "Completed" : "In progress"}</div>
+          </div>
+          <div class="badge-row">
+            <span class="badge accent">Prompt: ${s.interaction.prompt}</span>
+            <span class="badge warn">Plan: ${s.improvement.plan}</span>
+            ${s.completed ? `<span class="badge success">Achievement: ${s.achievement.title}</span>` : ""}
+            ${s.bonusUnlocked ? `<span class="badge">Bonus: ${s.generatedObjects.join(", ")}</span>` : ""}
+          </div>
+          <div class="actions">
+            <button class="start-btn">Start ${s.interaction.type}</button>
+            <button class="complete-btn" ${s.completed ? "disabled" : ""}>Complete ${s.improvement.type}</button>
+            <button class="secondary log-btn">View log</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderAchievements() {
+      const root = document.getElementById("achievements");
+      if (!state.achievements.length) {
+        root.innerHTML = `<span class="badge">No achievements yet</span>`;
+        return;
+      }
+      root.innerHTML = state.achievements.map(a => `
+        <span class="badge success" title="${a.description}">${a.title}</span>
+      `).join("");
+    }
+
+    function renderExport() {
+      const payload = {
+        sections: state.sections.map(s => ({
+          id: s.id,
+          title: s.title,
+          interaction: s.interaction,
+          improvement: s.improvement,
+          reward: s.reward,
+          completed: s.completed,
+          achievement: s.achievement,
+          bonusUnlocked: s.bonusUnlocked,
+          generatedObjects: s.generatedObjects,
+          createdAt: s.createdAt,
+          completedAt: s.completedAt,
+          streakContribution: s.streakContribution
+        })),
+        achievements: state.achievements,
+        objectPool: state.objectPool,
+        globalStreak: state.globalStreak
+      };
+      document.getElementById("exportArea").textContent = JSON.stringify(payload, null, 2);
+    }
+
+    function bindCardEvents() {
+      document.querySelectorAll(".card").forEach(card => {
+        const id = card.getAttribute("data-id");
+        card.querySelector(".start-btn")?.addEventListener("click", () => startInteraction(id));
+        card.querySelector(".complete-btn")?.addEventListener("click", () => completeSection(id));
+        card.querySelector(".log-btn")?.addEventListener("click", () => showLog(id));
+      });
+    }
+
+    function showLog(id) {
+      const section = state.sections.find(s => s.id === id);
+      if (!section) return;
+      const title = `Log — ${section.title}`;
+      const meta = `${section.interaction.type} • ${section.improvement.type} • ${section.reward.type}`;
+      const lines = section.log.map(l => `[${l.at}] ${l.event}: ${JSON.stringify(l.data)}`);
+      openModalRaw(title, meta, lines);
+    }
+
+    // ===========================
+    // Modal & Chat
+    // ===========================
+    function openModal(section) {
+      const backdrop = document.getElementById("backdrop");
+      backdrop.style.display = "flex";
+      document.getElementById("modalTitle").textContent = `Interaction — ${section.title}`;
+      document.getElementById("modalMeta").textContent = `${section.interaction.type} • ${section.improvement.type} • ${section.reward.type}`;
+      const chat = document.getElementById("chat");
+      chat.innerHTML = "";
+      addMsg("system", `Prompt: ${section.interaction.prompt}`);
+      addMsg("system", `Improvement plan: ${section.improvement.plan}`);
+      document.getElementById("chatInput").value = "";
+    }
+
+    function openModalRaw(title, meta, lines = []) {
+      const backdrop = document.getElementById("backdrop");
+      backdrop.style.display = "flex";
+      document.getElementById("modalTitle").textContent = title;
+      document.getElementById("modalMeta").textContent = meta;
+      const chat = document.getElementById("chat");
+      chat.innerHTML = "";
+      for (const line of lines) addMsg("system", line);
+      document.getElementById("chatInput").value = "";
+    }
+
+    function closeModal() {
+      document.getElementById("backdrop").style.display = "none";
+      state.activeSectionId = null;
+    }
+
+    function addMsg(role, text) {
+      const chat = document.getElementById("chat");
+      const div = document.createElement("div");
+      div.className = `msg ${role}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function handleSend() {
+      const input = document.getElementById("chatInput");
+      const text = input.value.trim();
+      if (!text) return;
+      addMsg("user", text);
+
+      // Simple reflective system message responding to the interaction method
+      const section = state.sections.find(s => s.id === state.activeSectionId);
+      const guide = {
+        conversation: "I hear you. What outcome would satisfy you today?",
+        dialogue: "Consider the counterpoint—what would change your mind?",
+        chat: "Quick win: name one next step you can take in 5 minutes.",
+        discussion: "Summarize your stance in one sentence, then name one risk."
+      };
+      const reply = guide[section?.interaction?.type] || "Noted.";
+      addMsg("system", reply);
+
+      // Log the exchange
+      if (section) {
+        section.log.push({ at: now(), event: "interaction", data: { role: "user", text } });
+        section.log.push({ at: now(), event: "interaction", data: { role: "system", text: reply } });
+      }
+      input.value = "";
+    }
+
+    // ===========================
+    // Bulk & Export Actions
+    // ===========================
+    function completeAllVisible() {
+      state.sections.forEach(s => { if (!s.completed) completeSection(s.id); });
+    }
+
+    function exportJSON() {
+      renderExport(); // ensure fresh
+      const data = document.getElementById("exportArea").textContent;
+      return data;
+    }
+
+    function copyExport() {
+      const data = exportJSON();
+      navigator.clipboard.writeText(data).then(() => {
+        alert("Export copied to clipboard.");
+      });
+    }
+
+    // ===========================
+    // Event Wiring
+    // ===========================
+    document.getElementById("addBtn").addEventListener("click", () => {
+      const t = document.getElementById("titleInput").value.trim();
+      generateSection(t || undefined);
+      document.getElementById("titleInput").value = "";
+    });
+    document.getElementById("openGameBtn").addEventListener("click", ()=>{ window.location.href = "spiritToSoul.html"; });
+    document.getElementById("completeAllBtn").addEventListener("click", completeAllVisible);
+    document.getElementById("resetBtn").addEventListener("click", resetAll);
+    document.getElementById("exportBtn").addEventListener("click", () => renderExport());
+    document.getElementById("copyBtn").addEventListener("click", copyExport);
+    document.getElementById("sendBtn").addEventListener("click", handleSend);
+    document.getElementById("closeBtn").addEventListener("click", closeModal);
+
+    // Seed a few sections for demo
+    generateSection("Faithful Beginnings");
+    generateSection("Hospitality Quest");
+    generateSection("Wisdom Dialogue");
+  </script>
+</body>
+</html>

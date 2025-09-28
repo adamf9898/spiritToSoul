@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>spiritToSoul — Scripture Card Quest</title>
+  <style>
+    :root {
+      --bg: #0f1226;
+      --panel: #1a1f3b;
+      --accent: #6c8cff;
+      --accent-2: #ffad5c;
+      --text: #eaf0ff;
+      --muted: #a9b3d1;
+      --success: #56d364;
+      --warn: #ffd35c;
+      --danger: #ff6c6c;
+      --shadow: rgba(0,0,0,0.35);
+      --ink: #0b0e1f;
+    }
+    * { box-sizing: border-box }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #0b0e1f 0%, #0f1226 100%);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #252a4a;
+      background: rgba(26,31,59,0.6);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      position: sticky; top: 0; z-index: 10;
+      box-shadow: 0 8px 24px var(--shadow);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .brand { display:flex; align-items:center; gap: 10px }
+    .brand .logo { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 6px 20px rgba(108,140,255,0.35) }
+    h1 { margin: 0; font-size: 18px }
+    .sub { color: var(--muted); font-size: 12px }
+
+    main { display: grid; grid-template-columns: 280px 1fr 320px; gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+
+    .panel {
+      background: var(--panel); border: 1px solid #2a315c; border-radius: 12px; padding: 12px; box-shadow: 0 6px 16px var(--shadow);
+    }
+    .sidebar { display:flex; flex-direction: column; gap: 12px }
+
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap }
+    .col { display: flex; flex-direction: column; gap: 10px }
+    .grow { flex: 1 }
+
+    .hud { display:grid; grid-template-columns: repeat(4,1fr); gap: 8px }
+    .meter { background: #101430; border: 1px solid #232a52; border-radius: 8px; padding: 8px }
+    .meter .bar { height: 8px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 6px; transition: width 300ms ease }
+    /* Utility */
+    .hidden { display: none !important }
+    .clickable { cursor: pointer }
+    .mr8 { margin-right: 8px }
+
+    .kv { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: var(--muted) }
+    .kv .cell { background: #101430; border: 1px solid #232a52; border-radius: 8px; padding: 8px }
+
+    button { background: var(--accent); color: #0e1224; border: none; padding: 8px 10px; border-radius: 8px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 18px rgba(108,140,255,0.25) }
+    button.secondary { background: #2a315c; color: var(--text); border: 1px solid #3a4378; box-shadow: none }
+    button.ghost { background: transparent; color: var(--text); border: 1px solid #3a4378 }
+    input, select { background: #101430; border: 1px solid #232a52; border-radius: 8px; color: var(--text); padding: 8px 10px }
+
+    .map { display:grid; grid-template-columns: repeat(2,1fr); gap: 8px }
+    .node { background: #101430; border: 1px solid #232a52; border-radius: 10px; padding: 10px; cursor: pointer }
+    .node.active { outline: 2px solid var(--accent) }
+
+    .scene { display:flex; flex-direction: column; gap: 10px; min-height: 420px }
+    .scene-header { display:flex; justify-content: space-between; align-items:center; }
+    .scene-log { background: var(--ink); border: 1px solid #232a52; border-radius: 10px; padding: 10px; height: 180px; overflow:auto }
+    .msg { padding: 8px 10px; border-radius: 8px; font-size: 13px; margin-bottom: 6px }
+    .msg.user { background: #13335b; border: 1px solid #1c4a83; color: #cfe4ff }
+    .msg.system { background: #2a315c; border: 1px solid #3a4378; color: #eaf0ff }
+    .msg.verse { background: #26484c; border: 1px solid #2e6e65; color: #d8fff1 }
+
+    .hand { display:grid; grid-template-columns: repeat(3,1fr); gap: 8px }
+    .card { background: #101430; border: 1px solid #232a52; border-radius: 12px; padding: 10px; display:flex; flex-direction:column; gap:8px; box-shadow: 0 10px 20px var(--shadow) }
+    .card h4 { margin:0; font-size: 14px }
+    .badge-row { display:flex; gap:6px; flex-wrap: wrap }
+    .badge { background: #0b0e1f; border: 1px solid #232a52; color: var(--muted); padding: 4px 6px; border-radius: 999px; font-size: 11px }
+    .badge.accent { border-color:#3a54d9; color:#c7d3ff }
+    .badge.warn { border-color:#7a642a; color:#ffe3a2 }
+    .badge.success { border-color:#2c7343; color:#baf7c6 }
+
+    .list { display:flex; flex-direction: column; gap: 8px; font-size: 13px }
+    .pill { background: #101430; border: 1px solid #232a52; border-radius: 8px; padding: 6px 8px; color: var(--muted) }
+    .divider { height: 1px; background: #232a52; margin: 6px 0 }
+
+    .footer { margin: 10px 0 20px; color: var(--muted); font-size: 12px; text-align: center }
+
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100 }
+    .modal { width: 92%; max-width: 740px; background: var(--panel); border: 1px solid #2a315c; border-radius: 12px; padding: 16px; box-shadow: 0 20px 50px var(--shadow) }
+
+    /* Utility classes to replace inline styles */
+    .m0 { margin: 0 }
+    .mt8 { margin-top: 8px }
+    .mt10 { margin-top: 10px }
+    .mb6 { margin-bottom: 6px }
+    .h3-6 { margin: 0 0 6px }
+    .h3-8 { margin: 0 0 8px }
+    .h4-tight { margin: 10px 0 4px }
+    .jc-between { justify-content: space-between }
+    .jc-end { justify-content: flex-end }
+    .scroll-160 { max-height: 160px; overflow: auto }
+    .codebox { margin-top: 8px; min-height: 120px; background: var(--ink); border:1px solid #232a52; border-radius:10px; padding:10px }
+    .card.compact { gap: 6px }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>spiritToSoul</h1>
+        <div class="sub">A scripture-driven card adventure to hear what the Spirit says to the soul.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="pill">Player: <span id="hudName">—</span></div>
+      <div class="pill">Level: <span id="hudLevel">1</span></div>
+      <div class="pill">XP: <span id="hudXP">0</span></div>
+      <div class="pill">Streak: <span id="hudStreak">0</span></div>
+      <div class="pill">Coins: <span id="hudCoins">0</span></div>
+      <button id="btnExport" class="secondary">Export</button>
+      <button id="btnReset" class="ghost">Reset</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left -->
+    <aside class="sidebar">
+      <section class="panel">
+        <h3 class="h3-6">Map</h3>
+        <div id="map" class="map"></div>
+      </section>
+
+      <section class="panel">
+        <div class="row jc-between">
+          <h3 class="m0">Quests</h3>
+          <button id="btnNewSection" class="secondary" title="New section">+</button>
+        </div>
+        <div id="sections" class="list"></div>
+      </section>
+    </aside>
+
+    <!-- Center -->
+    <section class="panel scene">
+      <div class="scene-header">
+        <div>
+          <h3 class="m0" id="sceneTitle">—</h3>
+          <div id="sceneSub" class="sub">—</div>
+        </div>
+        <div class="row">
+          <button id="btnComplete" class="secondary">Complete</button>
+          <button id="btnAction" class="secondary">Action</button>
+          <button id="btnWiki" class="ghost">Wiki</button>
+          <button id="btnGuide" class="ghost">Guide</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+
+      <div class="hud">
+        <div class="meter"><div>Spirit</div><div class="bar" id="barSpirit"></div></div>
+        <div class="meter"><div>Soul</div><div class="bar" id="barSoul"></div></div>
+        <div class="meter"><div>Body</div><div class="bar" id="barBody"></div></div>
+        <div class="meter"><div>Faith</div><div class="bar" id="barFaith"></div></div>
+      </div>
+
+      <div class="kv mt8">
+        <div class="cell"><strong>Objective</strong><div id="sceneGoal" class="sub">—</div></div>
+        <div class="cell"><strong>Bonus</strong><div id="sceneBonus" class="sub">—</div></div>
+      </div>
+
+      <div class="scene-log" id="chat"></div>
+      <div class="row">
+        <input id="chatInput" class="grow" placeholder="Speak your heart..." />
+        <button id="btnSend">Send</button>
+      </div>
+
+      <h4 class="h4-tight">Hand</h4>
+      <div class="hand" id="hand"></div>
+    </section>
+
+    <!-- Right -->
+    <aside class="sidebar">
+      <section class="panel">
+        <h3 class="h3-6">Inventory</h3>
+        <div id="inventory" class="list"></div>
+      </section>
+
+      <section class="panel">
+        <h3 class="h3-6">Achievements</h3>
+        <div id="achievements" class="badge-row"></div>
+      </section>
+
+      <section class="panel">
+        <h3 class="h3-6">Profile</h3>
+        <div class="kv">
+          <div class="cell">Virtue<br><span id="hudVirtue" class="sub">—</span></div>
+          <div class="cell">Attrs<br><span id="hudAttrs" class="sub">—</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3 class="h3-6">Export</h3>
+        <div class="row">
+          <button id="btnCopy" class="secondary">Copy</button>
+        </div>
+        <pre id="exportArea" class="codebox"></pre>
+      </section>
+    </aside>
+  </main>
+
+  <div class="footer">Scripture from the King James Version (Public Domain). All client-side, no external services required.</div>
+
+  <!-- Profile Modal -->
+  <div class="modal-backdrop" id="backdropProfile">
+    <div class="modal">
+      <h3 class="h3-8">Begin your journey</h3>
+      <div class="row">
+        <input id="nameInput" placeholder="Your name" class="grow" />
+        <select id="virtueInput">
+          <option value="Faith">Faith</option>
+          <option value="Hope">Hope</option>
+          <option value="Charity">Charity</option>
+          <option value="Wisdom">Wisdom</option>
+        </select>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="sub mb6">Choose 2 attributes</div>
+        <div id="attrChoices" class="row scroll-160"></div>
+      </div>
+      <div class="row jc-end mt10">
+        <button id="btnStart">Start</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guide Modal -->
+  <div class="modal-backdrop" id="backdropGuide">
+    <div class="modal">
+      <h3 class="h3-8">Guide</h3>
+      <div class="list">
+        <div class="pill">Play a Scripture card in the Hand to influence Spirit, Soul, Body, and Faith.</div>
+        <div class="pill">Speak in the chat; the scene will respond with reflective prompts.</div>
+        <div class="pill">Complete scene objectives to gain XP, streak, and objects. Consecutive completions increase bonuses.</div>
+        <div class="pill">Open Export to save your progress; it’s stored locally in your browser.</div>
+      </div>
+      <div class="row jc-end mt10">
+        <button id="btnCloseGuide" class="secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Modal -->
+  <div class="modal-backdrop" id="backdropAction">
+    <div class="modal">
+      <h3 class="h3-8" id="actionTitle">Action</h3>
+      <div id="actionArea" class="list"></div>
+      <div class="row jc-end mt10">
+        <button id="btnCloseAction" class="secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wiki Modal -->
+  <div class="modal-backdrop" id="backdropWiki">
+    <div class="modal">
+      <h3 class="h3-8">Wiki</h3>
+      <div id="wikiList" class="list"></div>
+      <div class="row jc-end mt10">
+        <button id="btnCloseWiki" class="secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===========================
+    // Core: Utilities
+    // ===========================
+    const VERSION = '0.2.0';
+    const uid = () => Math.random().toString(36).slice(2, 9);
+    const now = () => new Date().toISOString();
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+
+    function saveState() {
+      localStorage.setItem('spiritToSoul', JSON.stringify(state));
+    }
+    function loadState() {
+      const raw = localStorage.getItem('spiritToSoul');
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    // ===========================
+    // Data: Scripture Deck (KJV — Public Domain)
+    // ===========================
+    const KJV_DECK = [
+      { id: uid(), ref: 'John 3:16', text: 'For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.', tags: ['Love','Gospel','Faith'], effects: { faith:+2, soul:+1 } },
+      { id: uid(), ref: 'Romans 10:9', text: 'That if thou shalt confess with thy mouth the Lord Jesus, and shalt believe in thine heart that God hath raised him from the dead, thou shalt be saved.', tags: ['Confession','Faith'], effects: { spirit:+2, faith:+1 } },
+      { id: uid(), ref: 'Proverbs 3:5-6', text: 'Trust in the LORD with all thine heart; and lean not unto thine own understanding. In all thy ways acknowledge him, and he shall direct thy paths.', tags: ['Guidance','Trust','Wisdom'], effects: { soul:+2, faith:+1 } },
+      { id: uid(), ref: 'Psalm 23:1', text: 'The LORD is my shepherd; I shall not want.', tags: ['Comfort','Provision'], effects: { soul:+1, body:+1 } },
+      { id: uid(), ref: 'Matthew 11:28', text: 'Come unto me, all ye that labour and are heavy laden, and I will give you rest.', tags: ['Rest','Comfort'], effects: { soul:+2 } },
+      { id: uid(), ref: 'Ephesians 2:8-9', text: 'For by grace are ye saved through faith; and that not of yourselves: it is the gift of God: Not of works, lest any man should boast.', tags: ['Grace','Faith'], effects: { spirit:+1, faith:+2 } },
+      { id: uid(), ref: 'Revelation 3:20', text: 'Behold, I stand at the door, and knock: if any man hear my voice, and open the door, I will come in to him, and will sup with him, and he with me.', tags: ['Invitation','Fellowship'], effects: { spirit:+2, soul:+1 } }
+    ];
+
+    // ===========================
+    // NPCs & Events
+    // ===========================
+    const NPCS = [
+      { id: 'merchant', name: 'Aquila', role: 'Merchant', where: ['market','harbor'], lines: [
+        'Peace be to you. Seek you wisdom or wares?',
+        'A fair measure, pressed down, and running over.'
+      ]},
+      { id: 'elder', name: 'Priscilla', role: 'Elder', where: ['sanctuary'], lines: [
+        'Continue in faith and charity and holiness with sobriety.',
+        'If any of you lack wisdom, let him ask of God.'
+      ]}
+    ];
+
+    const EVENTS = [
+      { id: 'rest', title: 'Quiet Rest', where: ['sanctuary'], text: 'You pause and pray. Strength returns.', effects: { soul:+1, spirit:+1 } },
+      { id: 'trial', title: 'A Small Trial', where: ['wilderness'], text: 'A rough path tests your resolve.', effects: { body:-1, faith:+1 } },
+      { id: 'opportunity', title: 'Opportunity', where: ['market'], text: 'A chance to serve appears.', effects: { faith:+1, coins:+10 } },
+      { id: 'fellowship', title: 'Fellowship', where: ['harbor'], text: 'You sup with new friends.', effects: { soul:+1 } }
+    ];
+
+    // ===========================
+    // State (extended)
+    // ===========================
+    const state = {
+      version: VERSION,
+      profile: { id: uid(), name: '', virtue: 'Faith', attrs: [], createdAt: now() },
+      stats: { spirit: 3, soul: 3, body: 3, faith: 3, xp: 0, level: 1, coins: 0 },
+      map: [
+        { id: 'sanctuary', title: 'Sanctuary', goal: 'Play a card with tag: Faith or Grace', recommend: ['Faith','Grace'], bonus: '+1 Insight object' },
+        { id: 'market', title: 'Marketplace', goal: 'Play a card with tag: Wisdom or Guidance', recommend: ['Wisdom','Guidance'], bonus: 'Chance to draw 1' },
+        { id: 'wilderness', title: 'Wilderness', goal: 'Play a card with tag: Trust or Comfort', recommend: ['Trust','Comfort'], bonus: '+1 Body' },
+        { id: 'harbor', title: 'Harbor', goal: 'Play a card with tag: Fellowship or Love', recommend: ['Fellowship','Love'], bonus: 'Unlock 1 object' }
+      ],
+      location: 'sanctuary',
+      deck: [], hand: [], discard: [],
+      objects: [],
+      sections: [],
+      achievements: [],
+      streak: 0,
+      data: { attributes: [], items: [], definitions: [], buildings: [] },
+      chat: [],
+      quests: []
+    };
+
+    // ===========================
+    // Scenes & Sections
+    // ===========================
+    function seedSections() {
+      const s = (title) => ({ id: uid(), title, completed:false, createdAt: now(), completedAt: null, log: [], reward: null, streakContribution: 0 });
+      state.sections.unshift(s('Faithful Beginnings'));
+      state.sections.unshift(s('Hospitality Quest'));
+      state.sections.unshift(s('Wisdom Dialogue'));
+    }
+
+    function completeCurrentScene() {
+      const sec = state.sections.find(x=>!x.completed);
+      if (!sec) return;
+      sec.completed = true;
+      sec.completedAt = now();
+      state.streak += 1;
+      sec.streakContribution = state.streak;
+      const reward = unlockObject();
+      sec.reward = reward ? { name: reward.slice(0,48), at: now() } : null;
+      pushAchievement(`Completed: ${sec.title}`, `Finished a section at ${state.map.find(m=>m.id===state.location)?.title}.`);
+      gainXP(25);
+      draw(1);
+      renderAll();
+      saveState();
+    }
+
+    // ===========================
+    // Deck Mechanics
+    // ===========================
+    function shuffle(arr) { for (let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]] } return arr }
+    function draw(n=1){ for(let i=0;i<n;i++){ if(state.deck.length===0){ state.deck = shuffle(state.discard.splice(0)); } const c=state.deck.shift(); if(c) state.hand.push(c); } saveState(); renderHand(); }
+    function playCard(id){
+      const idx = state.hand.findIndex(c=>c.id===id); if(idx<0) return; const card = state.hand.splice(idx,1)[0]; state.discard.unshift(card);
+      applyEffects(card.effects);
+      addMsg('verse', `${card.ref} — ${card.text}`);
+      updateQuestsWithCard(card);
+      // Scene objective check
+      const scene = state.map.find(m=>m.id===state.location);
+      const ok = card.tags.some(t=> scene.recommend.includes(t));
+      if(ok){
+        addMsg('system', `Objective satisfied. Bonus applied: ${scene.bonus}`);
+        applyBonus(scene);
+        pushAchievement(`Played: ${card.ref}`, `Used a ${card.tags.join(', ')} scripture in ${scene.title}.`);
+      } else {
+        addMsg('system', `Partial progress. Try a card with ${scene.recommend.join(' or ')}.`);
+      }
+      gainXP(10);
+      draw(1);
+      saveState();
+      renderAll();
+    }
+
+    function applyEffects(e={}){
+      const s = state.stats;
+      s.spirit = clamp(s.spirit + (e.spirit||0), 0, 10);
+      s.soul   = clamp(s.soul   + (e.soul||0),   0, 10);
+      s.body   = clamp(s.body   + (e.body||0),   0, 10);
+      s.faith  = clamp(s.faith  + (e.faith||0),  0, 10);
+    }
+
+    function gainXP(n){
+      state.stats.xp += n;
+      while(state.stats.xp >= levelCap()){
+        state.stats.xp -= levelCap();
+        state.stats.level += 1;
+        addMsg('system', `You reached level ${state.stats.level}.`);
+        pushAchievement(`Level ${state.stats.level}`, 'Grew in grace and knowledge.');
+      }
+      saveState();
+      renderHUD();
+    }
+    function levelCap(){ return 50 + (state.stats.level-1)*25; }
+
+    // ===========================
+    // Quests
+    // ===========================
+    function seedQuests(){
+      const qs = [
+        { id:'q-first', title:'First Steps', desc:'Play 1 scripture card.', tags:[], target:1, progress:0, reward:{xp:50, coins:20} },
+        { id:'q-faith', title:'Faith Builder', desc:'Play 3 Faith cards.', tags:['Faith'], target:3, progress:0, reward:{xp:75, coins:30} },
+        { id:'q-comfort', title:'Comfort to the Weary', desc:'Play 2 Comfort/Trust cards.', tags:['Comfort','Trust'], target:2, progress:0, reward:{xp:60, coins:25} }
+      ];
+      state.quests = qs;
+    }
+    function updateQuestsWithCard(card){
+      (state.quests||[]).forEach(q=>{
+        const ok = (q.tags.length===0) || q.tags.some(t=> card.tags.includes(t));
+        if(!q.completed && ok){
+          q.progress = Math.min(q.target, (q.progress||0)+1);
+          if(q.progress>=q.target){
+            q.completed = true;
+            addMsg('system', `Quest completed: ${q.title}`);
+            pushAchievement(`Quest: ${q.title}`, q.desc);
+            state.stats.coins += (q.reward?.coins||0);
+            gainXP(q.reward?.xp||0);
+          }
+        }
+      });
+      renderSections(); renderHUD(); saveState();
+    }
+
+    // ===========================
+    // Actions (Shop/Pray/Explore/Sail)
+    // ===========================
+    function openAction(){
+      const scene = state.map.find(m=>m.id===state.location) || state.map[0];
+      const bd = document.getElementById('backdropAction');
+      const area = document.getElementById('actionArea');
+      const title = document.getElementById('actionTitle');
+      area.innerHTML = '';
+      if(scene.id==='market'){
+        title.textContent = 'Marketplace — Shop';
+        const items = (state.data.items||[]).slice(0,6).map(name=>({name, cost: 20+Math.floor(Math.random()*20)}));
+        items.forEach(it=>{
+          const row = document.createElement('div'); row.className='row';
+          row.innerHTML = `<div class="pill grow">${it.name}</div><div class="pill">${it.cost}c</div>`;
+          const btn = document.createElement('button'); btn.textContent='Buy'; btn.addEventListener('click',()=> buyItem(it));
+          row.appendChild(btn); area.appendChild(row);
+        });
+      } else if(scene.id==='sanctuary'){
+        title.textContent = 'Sanctuary — Pray';
+        const btn = document.createElement('button'); btn.textContent='Pray'; btn.addEventListener('click',()=>{ const ev = EVENTS.find(e=>e.id==='rest'); resolveEvent(ev); }); area.appendChild(btn);
+        addNPCBlock(area, 'sanctuary');
+      } else if(scene.id==='wilderness'){
+        title.textContent = 'Wilderness — Explore';
+        const btn = document.createElement('button'); btn.textContent='Explore'; btn.addEventListener('click',()=> randomEvent()); area.appendChild(btn);
+      } else if(scene.id==='harbor'){
+        title.textContent = 'Harbor — Fellowship';
+        addNPCBlock(area, 'harbor');
+        const btn = document.createElement('button'); btn.textContent='Sail'; btn.addEventListener('click',()=>{ state.location = pick(state.map).id; addMsg('system','You sailed to a new place.'); renderAll(); saveState(); }); area.appendChild(btn);
+      } else {
+        title.textContent = 'Actions';
+        const btn = document.createElement('button'); btn.textContent='Look Around'; btn.addEventListener('click',()=> randomEvent()); area.appendChild(btn);
+      }
+      bd.style.display='flex';
+    }
+    function addNPCBlock(area, where){
+      const group = NPCS.filter(n=> n.where.includes(where));
+      group.forEach(n=>{
+        const row = document.createElement('div'); row.className='card compact';
+        row.innerHTML = `<strong>${n.name}</strong> <span class="sub">${n.role}</span>`;
+        const btn = document.createElement('button'); btn.className='secondary'; btn.textContent='Talk'; btn.addEventListener('click',()=>{
+          addMsg('system', `${n.name}: ${pick(n.lines)}`); pushAchievement('Conversation', `Spoke with ${n.name}.`);
+        });
+        row.appendChild(btn); area.appendChild(row);
+      });
+    }
+    function buyItem(it){
+      if((state.stats.coins||0) < it.cost){ addMsg('system','Not enough coins.'); return; }
+      state.stats.coins -= it.cost; pushObject(it.name);
+      addMsg('system', `Purchased ${it.name}.`);
+      pushAchievement('Purchase', `Bought an item at the market.`);
+      renderInventory(); renderHUD(); saveState();
+    }
+
+    function randomEvent(){
+      const evs = EVENTS.filter(e=> e.where.includes(state.location));
+      if(!evs.length) return; resolveEvent(pick(evs));
+    }
+    function resolveEvent(ev){
+      addMsg('system', `${ev.title}: ${ev.text}`);
+      applyEffects(ev.effects||{});
+      if(ev.effects?.coins){ state.stats.coins += ev.effects.coins; }
+      renderHUD(); saveState();
+    }
+
+    // ===========================
+    // Objects & Achievements
+    // ===========================
+    function unlockObject(){ if(!state.data.items.length) return null; const item = pick(state.data.items); state.objects.unshift({ id: uid(), name: item, at: now() }); renderInventory(); saveState(); return item; }
+    function pushObject(name){ state.objects.unshift({ id: uid(), name, at: now() }); renderInventory(); saveState(); }
+
+    function pushAchievement(title, description){ const a = { id: uid(), title, description, at: now() }; state.achievements.unshift(a); renderAchievements(); saveState(); }
+
+    // ===========================
+    // Chat
+    // ===========================
+    function addMsg(role, text){ const chat = document.getElementById('chat'); const div = document.createElement('div'); div.className = `msg ${role}`; div.textContent = text; chat.appendChild(div); chat.scrollTop = chat.scrollHeight; state.chat.push({ at: now(), role, text }); saveState(); }
+    function handleSend(){ const input = document.getElementById('chatInput'); const text = input.value.trim(); if(!text) return; input.value=''; addMsg('user', text); const reply = reflect(text); addMsg('system', reply); }
+    function reflect(text){
+      const scene = state.map.find(m=>m.id===state.location);
+      const hooks = [
+        'What outcome would satisfy you today?',
+        'Name one step you can take in five minutes.',
+        'What do you sense the Lord is inviting you to trust?',
+        'Summarize your hope in one sentence.'
+      ];
+      const tagHint = pick(scene.recommend);
+      return `${pick(hooks)} Consider a scripture about ${tagHint.toLowerCase()}.`;
+    }
+
+    // ===========================
+    // Rendering
+    // ===========================
+    function renderAll(){ renderHUD(); renderMap(); renderScene(); renderHand(); renderInventory(); renderAchievements(); renderSections(); renderExport(); renderProfileHUD(); }
+
+    function renderHUD(){
+      const s = state.stats;
+      const setBar = (id, v) => { const el = document.getElementById(id); el.style.width = `${v*10}%`; };
+      setBar('barSpirit', s.spirit);
+      setBar('barSoul', s.soul);
+      setBar('barBody', s.body);
+      setBar('barFaith', s.faith);
+      document.getElementById('hudLevel').textContent = String(s.level);
+      document.getElementById('hudXP').textContent = String(s.xp);
+      document.getElementById('hudStreak').textContent = String(state.streak);
+      document.getElementById('hudCoins').textContent = String(s.coins||0);
+    }
+
+    function renderMap(){
+      const root = document.getElementById('map');
+      root.innerHTML = '';
+      state.map.forEach(node => {
+        const div = document.createElement('div');
+        div.className = 'node' + (node.id===state.location ? ' active' : '');
+        div.innerHTML = `<strong>${node.title}</strong><div class="sub">${node.goal}</div>`;
+        div.addEventListener('click', ()=>{ state.location = node.id; addMsg('system', `Travelled to ${node.title}.`); renderAll(); saveState(); });
+        root.appendChild(div);
+      });
+    }
+
+    function renderScene(){
+      const scene = state.map.find(m=>m.id===state.location);
+      document.getElementById('sceneTitle').textContent = scene.title;
+      document.getElementById('sceneSub').textContent = scene.id==='sanctuary' ? 'A quiet place of prayer and rest.' : scene.id==='market' ? 'Bustling voices and choices.' : scene.id==='wilderness' ? 'Silent paths and tests.' : 'Safe waters and new horizons.';
+      document.getElementById('sceneGoal').textContent = scene.goal;
+      document.getElementById('sceneBonus').textContent = scene.bonus;
+    }
+
+    function renderHand(){
+      const root = document.getElementById('hand');
+      root.innerHTML = state.hand.map(c=>`
+        <article class="card">
+          <h4>${c.ref}</h4>
+          <div class="sub">${c.text}</div>
+          <div class="badge-row">${c.tags.map(t=>`<span class="badge accent">${t}</span>`).join('')}</div>
+          <div class="row">
+            <button data-id="${c.id}">Play</button>
+            <button class="secondary" data-tip="${c.id}">Info</button>
+          </div>
+        </article>
+      `).join('');
+      // bind
+      root.querySelectorAll('button[data-id]')?.forEach(b=> b.addEventListener('click', ()=> playCard(b.getAttribute('data-id'))));
+      root.querySelectorAll('button[data-tip]')?.forEach(b=> b.addEventListener('click', ()=>{
+        const id = b.getAttribute('data-tip'); const card = state.hand.find(x=>x.id===id) || state.discard.find(x=>x.id===id);
+        if(card){ addMsg('system', `Tags: ${card.tags.join(', ')}. Effects: ${Object.entries(card.effects).map(([k,v])=>`${k}+${v}`).join(', ')}`); }
+      }));
+    }
+
+    function renderInventory(){
+      const root = document.getElementById('inventory');
+      if(!state.objects.length){ root.innerHTML = '<div class="pill">No objects yet</div>'; return; }
+      root.innerHTML = state.objects.map(o=>`<div class="pill" title="${o.at}">${o.name}</div>`).join('');
+    }
+
+    function renderAchievements(){
+      const root = document.getElementById('achievements');
+      if(!state.achievements.length){ root.innerHTML = '<span class="badge">No achievements yet</span>'; return; }
+      root.innerHTML = state.achievements.map(a=>`<span class="badge success" title="${a.description}">${a.title}</span>`).join('');
+    }
+
+    function renderSections(){
+      const root = document.getElementById('sections');
+      const questList = (state.quests||[]).map(q=>`
+        <div class="card compact">
+          <div class="row jc-between">
+            <strong>${q.title}</strong>
+            <span class="badge ${q.completed?'success':'warn'}">${q.completed? 'Done' : (q.progress||0)+'/'+q.target}</span>
+          </div>
+          <div class="sub">${q.desc}</div>
+        </div>
+      `).join('');
+      const sectionsList = state.sections.map(s=>`
+        <div class="card compact">
+          <div class="row jc-between">
+            <strong>${s.title}</strong>
+            <span class="badge ${s.completed?'success':'warn'}">${s.completed?'Completed':'In progress'}</span>
+          </div>
+          <div class="row jc-end">
+            <button class="secondary" data-log="${s.id}">Log</button>
+          </div>
+        </div>
+      `).join('');
+      root.innerHTML = questList + sectionsList;
+      root.querySelectorAll('button[data-log]')?.forEach(b=> b.addEventListener('click', ()=>{
+        const id = b.getAttribute('data-log');
+        const s = state.sections.find(x=>x.id===id);
+        if(!s) return;
+        addMsg('system', `Log — ${s.title} | ${s.completed? 'Completed at '+s.completedAt : 'In progress'}`);
+      }));
+    }
+
+    function renderExport(){
+      const payload = {
+        version: state.version,
+        profile: state.profile,
+        stats: state.stats,
+        location: state.location,
+        deckCount: state.deck.length,
+        hand: state.hand.map(({id,ref,tags})=>({id,ref,tags})),
+        discard: state.discard.map(({id,ref})=>({id,ref})),
+        objects: state.objects,
+        sections: state.sections,
+        achievements: state.achievements,
+        streak: state.streak
+      };
+      document.getElementById('exportArea').textContent = JSON.stringify(payload, null, 2);
+    }
+
+    function renderProfileHUD(){
+      document.getElementById('hudName').textContent = state.profile.name || '—';
+      document.getElementById('hudVirtue').textContent = state.profile.virtue || '—';
+      document.getElementById('hudAttrs').textContent = state.profile.attrs?.slice(0,2).join(', ') || '—';
+    }
+
+    // ===========================
+    // Data.json loader (enhanced) & Map extension
+    // ===========================
+    async function loadProjectData(){
+      try {
+        const res = await fetch('data.json');
+        const txt = await res.text();
+        const cleaned = txt.replace(/^\uFEFF/, '').replace(/(^|\n)\s*\/\/.*(?=\n|$)/g, '');
+        const json = JSON.parse(cleaned);
+        const dedup = Array.from(new Set((json.attribute||[]).map(a=>String(a).trim().toLowerCase())));
+        state.data.attributes = dedup.slice(0, 40);
+        state.data.items = (json.item || []).slice(0, 60);
+        state.data.definitions = (json.definitions||[]).slice(0, 50);
+        state.data.buildings = (json.building||[]).slice(0, 10);
+      } catch (e) {
+        state.data.attributes = ['faith','wisdom','charity','strength','endurance','insight'];
+        state.data.items = ['Artifact','Tool','Card','Token','Blessing','Key','Scroll'];
+        state.data.definitions = [];
+        state.data.buildings = [];
+      }
+    }
+
+    function extendMapFromData(){
+      const builds = state.data.buildings || [];
+      const add = (id, title, goal, recommend, bonus) => { if(!state.map.some(m=>m.id===id)) state.map.push({id,title,goal,recommend,bonus}); };
+      builds.forEach(b=>{
+        if(b==='temple') add('temple','Temple','Play a card with tag: Grace or Faith',['Grace','Faith'],'+1 Spirit');
+        if(b==='village') add('village','Village','Play a card with tag: Fellowship',['Fellowship'],'+10 coins');
+        if(b==='town') add('town','Town','Play a card with tag: Wisdom',['Wisdom'],'Draw 1');
+        if(b==='shop') add('shop','Shop','Play a card with tag: Charity',['Love','Charity'],'Discount in market');
+        if(b==='blackmarket') add('blackmarket','Black Market','Play a card with tag: Courage',['Trust'],'Unlock rare item');
+      });
+    }
+
+    function showProfileModal(){
+      const bd = document.getElementById('backdropProfile');
+      bd.style.display = 'flex';
+      const root = document.getElementById('attrChoices');
+      root.innerHTML = '';
+      state.data.attributes.slice(0, 20).forEach(a=>{
+        const label = document.createElement('label');
+        label.className='pill clickable';
+        label.innerHTML = `<input class="mr8" type="checkbox" value="${a}"> ${a}`;
+        root.appendChild(label);
+      });
+      document.getElementById('btnStart').onclick = ()=>{
+        const name = document.getElementById('nameInput').value.trim() || 'Pilgrim';
+        const virtue = document.getElementById('virtueInput').value;
+        const chosen = Array.from(root.querySelectorAll('input[type=checkbox]:checked')).map(x=>x.value).slice(0,2);
+        state.profile.name = name;
+        state.profile.virtue = virtue;
+        state.profile.attrs = chosen;
+        bd.style.display = 'none';
+        pushAchievement('Journey Begun', `Welcome, ${name}. Virtue: ${virtue}.`);
+        renderAll(); saveState();
+      };
+    }
+
+    // ===========================
+    // Events
+    // ===========================
+    document.getElementById('btnSend').addEventListener('click', handleSend);
+    document.getElementById('chatInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') handleSend(); });
+    document.getElementById('btnComplete').addEventListener('click', completeCurrentScene);
+    document.getElementById('btnGuide').addEventListener('click', ()=>{ document.getElementById('backdropGuide').style.display='flex'; });
+    document.getElementById('btnCloseGuide').addEventListener('click', ()=>{ document.getElementById('backdropGuide').style.display='none'; });
+    document.getElementById('btnAction').addEventListener('click', openAction);
+    document.getElementById('btnCloseAction').addEventListener('click', ()=>{ document.getElementById('backdropAction').style.display='none'; });
+    document.getElementById('btnWiki').addEventListener('click', ()=>{ renderWiki(); document.getElementById('backdropWiki').style.display='flex'; });
+    document.getElementById('btnCloseWiki').addEventListener('click', ()=>{ document.getElementById('backdropWiki').style.display='none'; });
+    document.getElementById('btnExport').addEventListener('click', renderExport);
+    document.getElementById('btnCopy').addEventListener('click', ()=>{ renderExport(); const data = document.getElementById('exportArea').textContent; navigator.clipboard.writeText(data); });
+    document.getElementById('btnReset').addEventListener('click', ()=>{ if(confirm('Reset all progress?')){ localStorage.removeItem('spiritToSoul'); location.reload(); } });
+
+    function renderWiki(){
+      const root = document.getElementById('wikiList');
+      if(!state.data.definitions?.length){ root.innerHTML = '<div class="pill">No wiki entries</div>'; return; }
+      root.innerHTML = state.data.definitions.slice(0,20).map(d=>`<div class="card compact"><strong>${d.term}</strong><div class="sub">${d.description}</div></div>`).join('');
+    }
+
+    // ===========================
+    // Bootstrap
+    // ===========================
+    (async function init(){
+      await loadProjectData();
+      extendMapFromData();
+      const saved = loadState();
+      if(saved && saved.version){ Object.assign(state, saved); }
+      if(!state.deck.length && !state.hand.length){ state.deck = shuffle(KJV_DECK.map(x=>({...x, id: uid()}))); draw(3); }
+      if(!state.sections.length) seedSections();
+      if(!state.quests.length) seedQuests();
+      renderAll();
+      if(!state.profile?.name) showProfileModal();
+      if(state.chat.length===0){ addMsg('system', 'Welcome to spiritToSoul. Play a scripture card or speak to begin.'); }
+    })();
+  </script>
+</body>
+</html>
